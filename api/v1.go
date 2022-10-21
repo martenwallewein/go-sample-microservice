@@ -7,7 +7,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/martenwallewein/go-sample-microservice/dbs"
+	"github.com/martenwallewein/go-sample-microservice/models"
+	"github.com/martenwallewein/go-sample-microservice/pkg/milestones"
+	"github.com/martenwallewein/go-sample-microservice/pkg/projects"
+	"github.com/martenwallewein/go-sample-microservice/pkg/tasks"
 )
 
 func path(endpoint string) string {
@@ -15,7 +18,6 @@ func path(endpoint string) string {
 }
 
 type RESTApiV1 struct {
-	dl     *dbs.DatabaseLayer
 	router *gin.Engine
 }
 
@@ -23,10 +25,9 @@ func (api *RESTApiV1) Serve(addr string) error {
 	return api.router.Run(addr)
 }
 
-func NewRESTApiV1(dl *dbs.DatabaseLayer) *RESTApiV1 {
+func NewRESTApiV1() *RESTApiV1 {
 	router := gin.Default()
 	api := &RESTApiV1{
-		dl,
 		router,
 	}
 
@@ -49,7 +50,7 @@ func NewRESTApiV1(dl *dbs.DatabaseLayer) *RESTApiV1 {
 }
 
 func (api *RESTApiV1) GetProjects(c *gin.Context) {
-	projects, err := api.dl.GetAllProjects()
+	projects, err := projects.GetService().GetAllProjects()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch projects"})
 		return
@@ -62,7 +63,7 @@ func (api *RESTApiV1) GetProjects(c *gin.Context) {
 
 func (api *RESTApiV1) EditProject(c *gin.Context) {
 	id := c.Param("id")
-	var project dbs.Project
+	var project models.Project
 	if err := c.ShouldBindJSON(&project); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -72,7 +73,7 @@ func (api *RESTApiV1) EditProject(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id, not a number"})
 		return
 	}
-	if err := api.dl.EditProject(uint(idInt), project); err != nil {
+	if err := projects.GetService().EditProject(uint(idInt), project); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
 	}
 
@@ -83,12 +84,12 @@ func (api *RESTApiV1) EditProject(c *gin.Context) {
 
 func (api *RESTApiV1) AddProject(c *gin.Context) {
 
-	var project dbs.Project
+	var project models.Project
 	if err := c.ShouldBindJSON(&project); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := api.dl.CreateProject(&project); err != nil {
+	if err := projects.GetService().CreateProject(&project); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add project"})
 	}
 
@@ -106,7 +107,7 @@ func (api *RESTApiV1) DeleteProject(c *gin.Context) {
 		return
 	}
 
-	if err := api.dl.DeleteProject(uint(idInt)); err != nil {
+	if err := projects.GetService().DeleteProject(uint(idInt)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete project"})
 	}
 
@@ -116,7 +117,7 @@ func (api *RESTApiV1) DeleteProject(c *gin.Context) {
 }
 
 func (api *RESTApiV1) GetMilestones(c *gin.Context) {
-	milestones, err := api.dl.GetAllMilestones()
+	milestones, err := milestones.GetService().GetAllMilestones()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch milestones"})
 	}
@@ -128,7 +129,7 @@ func (api *RESTApiV1) GetMilestones(c *gin.Context) {
 
 func (api *RESTApiV1) EditMilestone(c *gin.Context) {
 	id := c.Param("id")
-	var milestone dbs.Milestone
+	var milestone models.Milestone
 	if err := c.ShouldBindJSON(&milestone); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -138,7 +139,7 @@ func (api *RESTApiV1) EditMilestone(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id, not a number"})
 		return
 	}
-	if err := api.dl.EditMilestone(uint(idInt), milestone); err != nil {
+	if err := milestones.GetService().EditMilestone(uint(idInt), milestone); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update milestone"})
 	}
 
@@ -149,12 +150,12 @@ func (api *RESTApiV1) EditMilestone(c *gin.Context) {
 
 func (api *RESTApiV1) AddMilestone(c *gin.Context) {
 
-	var milestone dbs.Milestone
+	var milestone models.Milestone
 	if err := c.ShouldBindJSON(&milestone); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := api.dl.CreateMilestone(&milestone); err != nil {
+	if err := milestones.GetService().CreateMilestone(&milestone); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add milestone"})
 	}
 
@@ -172,7 +173,7 @@ func (api *RESTApiV1) DeleteMilestone(c *gin.Context) {
 		return
 	}
 
-	if err := api.dl.DeleteMilestone(uint(idInt)); err != nil {
+	if err := milestones.GetService().DeleteMilestone(uint(idInt)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete milestone"})
 	}
 
@@ -182,7 +183,7 @@ func (api *RESTApiV1) DeleteMilestone(c *gin.Context) {
 }
 
 func (api *RESTApiV1) GetTasks(c *gin.Context) {
-	tasks, err := api.dl.GetAllTasks()
+	tasks, err := tasks.GetService().GetAllTasks()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tasks"})
 	}
@@ -194,7 +195,7 @@ func (api *RESTApiV1) GetTasks(c *gin.Context) {
 
 func (api *RESTApiV1) EditTask(c *gin.Context) {
 	id := c.Param("id")
-	var task dbs.Task
+	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -204,7 +205,7 @@ func (api *RESTApiV1) EditTask(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id, not a number"})
 		return
 	}
-	if err := api.dl.EditTask(uint(idInt), task); err != nil {
+	if err := tasks.GetService().EditTask(uint(idInt), task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update task"})
 	}
 
@@ -215,12 +216,12 @@ func (api *RESTApiV1) EditTask(c *gin.Context) {
 
 func (api *RESTApiV1) AddTask(c *gin.Context) {
 
-	var task dbs.Task
+	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := api.dl.CreateTask(&task); err != nil {
+	if err := tasks.GetService().CreateTask(&task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add task"})
 	}
 
@@ -238,7 +239,7 @@ func (api *RESTApiV1) DeleteTask(c *gin.Context) {
 		return
 	}
 
-	if err := api.dl.DeleteTask(uint(idInt)); err != nil {
+	if err := tasks.GetService().DeleteTask(uint(idInt)); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete task"})
 	}
 

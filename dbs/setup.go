@@ -5,9 +5,16 @@ import (
 	"os"
 
 	"github.com/glebarez/sqlite"
+	"github.com/martenwallewein/go-sample-microservice/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+var dbInstance *gorm.DB
+
+func GetDB() *gorm.DB {
+	return dbInstance
+}
 
 func setupPostgres() (*gorm.DB, error) {
 	dbHost := os.Getenv("DB_HOST")
@@ -47,11 +54,7 @@ func setupSQLite() (*gorm.DB, error) {
 	return db, err
 }
 
-func autoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(&Task{}, &Milestone{}, &Project{})
-}
-
-func InitializeDatabaseLayer() (*DatabaseLayer, error) {
+func InitializeDatabaseLayer() error {
 
 	dbs := os.Getenv("DB")
 	var db *gorm.DB
@@ -65,17 +68,17 @@ func InitializeDatabaseLayer() (*DatabaseLayer, error) {
 		db, err = setupPostgres()
 		break
 	default:
-		return nil, fmt.Errorf("No database found, set the DB env")
+		return fmt.Errorf("No database found, set the DB env")
 	}
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = autoMigrate(db)
+	err = models.AutoMigrate(db)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	dl := NewDatabaseLayer(db)
-	return dl, nil
+	dbInstance = db
+	return nil
 }
